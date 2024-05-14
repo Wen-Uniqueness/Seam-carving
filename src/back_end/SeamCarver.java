@@ -1,6 +1,7 @@
 package back_end;
 
 import edu.princeton.cs.algs4.Picture;
+import back_end.Arithmetic;
 
 public class SeamCarver {
     private Picture m_picture;
@@ -45,12 +46,34 @@ public class SeamCarver {
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam(){
-        int[][] dp = new int[width][height];
-        return null;
+        Double[][] dp = new Double[width][height];
+        
+        for (int x = 0; x < width; x++){
+            for (int y = 0; y < height; y++){
+                if (x == 0) dp[0][y] = (double) 1000;
+                else {
+                    double last_min = dp[x-1][y];
+                    if (y > 0) last_min = Math.min(last_min, dp[x-1][y-1]);
+                    if (y < height-1) last_min = Math.min(last_min, dp[x-1][y+1]);
+                    dp[x][y] = energy(x, y) + last_min;
+                }
+            }
+        }
+
+        int[] seam = new int[width];
+        seam[width-1] = Arithmetic.find_min(dp[-1]);
+        for (int i = width-2; i >= 0; i--){
+            int index = seam[i+1];
+            if (seam[i+1]>0 && dp[i][seam[i+1]-1] < dp[i][index]) index = seam[i+1]-1;
+            if (seam[i+1]<height-1 && dp[i][seam[i+1]+1] < dp[i][index]) index = seam[i+1]+1;
+        }
+        return seam;
     }
 
-    // // sequence of indices for vertical seam
-    // public int[] findVerticalSeam()
+    // sequence of indices for vertical seam
+    public int[] findVerticalSeam(){
+        return null;
+    }
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam){
