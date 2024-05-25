@@ -275,8 +275,10 @@ public class SeamCarver {
             for (int j = 0; j < height; j++){
                 picture.set(i, j, m_picture.get(x, j));
                 if (how_to_expand[x][j] > 0) {
-                    x+=1;
+                    
                     how_to_expand[x][j] -= 1;
+                }else{
+                    x+=1;
                 }
             }
         }
@@ -314,8 +316,10 @@ public class SeamCarver {
             for (int j = 0; j < height; j++){
                 picture.set(i, j, m_picture.get(i, y));
                 if (how_to_expand[i][y] > 0) {
-                    y+=1;
                     how_to_expand[i][y] -= 1;
+                }
+                else{
+                    y+=1;
                 }
             }
         }
