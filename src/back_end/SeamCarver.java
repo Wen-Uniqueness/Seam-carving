@@ -6,34 +6,42 @@ public class SeamCarver {
     private Picture m_picture;
     private int width;
     private int height;
-    private int[][] protect;
+    private int[][] m_protect;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         m_picture = picture;
         width = picture.width();
         height = picture.height();
-        protect = null;
+        m_protect = null;
     }
 
     public SeamCarver(Picture picture, int[][] protect) {
         m_picture = picture;
         width = picture.width();
         height = picture.height();
-        if (protect.length != width || protect[0].length != height) throw new IllegalArgumentException();
-        this.protect = protect;
+        System.out.println(width);
+        System.out.println(height);
+        System.out.println(protect.length);
+        System.out.println(protect[0].length);
+        if (protect != null&&(protect.length != width || protect[0].length != height)) throw new IllegalArgumentException();
+        this.m_protect = protect;
     }
 
     public SeamCarver(SeamCarver SC) {
         m_picture = new Picture(SC.picture());
         width = m_picture.width();
         height = m_picture.height();
-        protect = SC.protect;
+        m_protect = SC.m_protect;
     }
 
     // current picture
     public Picture picture() {
         return m_picture;
+    }
+
+    public int[][] protect(){
+        return m_protect;
     }
 
     // width of current picture
@@ -51,8 +59,8 @@ public class SeamCarver {
         if (x < 0 || x > width-1 || y < 0 || y > height-1) throw new IllegalArgumentException();
         if (x == 0 || x == width-1 || y == 0 || y == height-1) return 1000;
 
-        if (protect != null && protect[x][y] > 0) return 1000;
-        if (protect != null && protect[x][y] < 0) return 0;
+        if (m_protect != null && m_protect[x][y] > 0) return 1000;
+        if (m_protect != null && m_protect[x][y] < 0) return 0;
 
         double power_square = 0;
         power_square += Math.pow(m_picture.get(x+1, y).getRed() - m_picture.get(x-1, y).getRed(), 2);
@@ -149,20 +157,20 @@ public class SeamCarver {
 
         Picture new_picture = new Picture(width, height-1);
         int[][] new_protect = null;
-        if (protect != null){
+        if (m_protect != null){
             new_protect = new int[width][height-1];
             for (int i = 0; i < width; i++){
                 for (int j = 0; j < height-1; j++){
                     int h = (j >= seam[i]) ? j : j+1;
                     new_picture.set(i, j, m_picture.get(i, h));
-                    new_protect[i][j] = protect[i][h];
+                    new_protect[i][j] = m_protect[i][h];
                 }
             }
         }
 
         m_picture = new_picture;
         height = height-1;
-        protect = new_protect;
+        m_protect = new_protect;
     }
 
     // remove vertical seam from current picture
@@ -175,13 +183,13 @@ public class SeamCarver {
 
         Picture new_picture = new Picture(width-1, height);
         int[][] new_protect = null;
-        if (protect != null){
+        if (m_protect != null){
             new_protect = new int[width-1][height];
             for (int i = 0; i < width-1; i++){
                 for (int j = 0; j < height; j++){
                     int w = (i >= seam[j]) ? i : i+1;
                     new_picture.set(i, j, m_picture.get(w,j));
-                    new_protect[i][j] = protect[w][j];
+                    new_protect[i][j] = m_protect[w][j];
                 }
             }
         }
@@ -189,7 +197,7 @@ public class SeamCarver {
 
         m_picture = new_picture;
         width = width-1;
-        protect = new_protect;
+        m_protect = new_protect;
     }
 
     // shrinking the picture
@@ -273,7 +281,7 @@ public class SeamCarver {
     }
 
     // expand the picture
-    public Picture expandingWidth(int new_width){
+    public SeamCarver expandingWidth(int new_width){
         if (new_width <= width) throw new IllegalArgumentException();
         int k = new_width - width;
         Double[][] dp = findVerticalSeamEnergy();
@@ -301,13 +309,14 @@ public class SeamCarver {
 
         // 生成一个新的图片
         Picture picture = new Picture(width+k, height);
+        int[][] new_protect = new int[width+k][height];
         int x = 0;
         for (int j = 0; j < height; j++){
             x = 0;
             for (int i = 0; i < width+k; i++){
                 picture.set(i, j, m_picture.get(x, j));
+                new_protect[i][j] = m_protect[x][j];
                 if (how_to_expand[x][j] > 0) {
-                    
                     how_to_expand[x][j] -= 1;
                 }else{
                     x+=1;
@@ -315,10 +324,10 @@ public class SeamCarver {
             }
         }
 
-        return picture;
+        return new SeamCarver(picture, new_protect);
     }
 
-    public Picture expandingHeight(int new_height){
+    public SeamCarver expandingHeight(int new_height){
         if (new_height <= height) throw new IllegalArgumentException();
         int k = new_height - height;
         Double[][] dp = findHorizontalSeamEnergy();
@@ -345,6 +354,7 @@ public class SeamCarver {
 
         // 生成一个新的图片
         Picture picture = new Picture(width, height+k);
+        int[][] new_protect = new int[width][height+k];
         int y = 0;
         for (int i = 0; i < width; i++){
             y = 0;
@@ -352,6 +362,7 @@ public class SeamCarver {
                 picture.set(i, j, m_picture.get(i, y));
                 if (how_to_expand[i][y] > 0) {
                     how_to_expand[i][y] -= 1;
+                    new_protect[i][j] = m_protect[i][y];
                 }
                 else{
                     y+=1;
@@ -359,7 +370,7 @@ public class SeamCarver {
             }
         }
 
-        return picture;
+        return new SeamCarver(picture, new_protect);
     }
 
 

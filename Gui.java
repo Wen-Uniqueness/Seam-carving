@@ -170,7 +170,7 @@ public class Gui extends JFrame {
     }
 
     private void applyResize() {
-        picture = Stablize_SC.bs(picture, new_width, new_height);
+        picture = Stablize_SC.bs(picture, pixelStatus, new_width, new_height);
         picture.show();
     }
 
