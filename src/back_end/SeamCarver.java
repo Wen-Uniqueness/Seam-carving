@@ -69,7 +69,7 @@ public class SeamCarver {
     public int[] findHorizontalSeam(){
         Double[][] dp = findHorizontalSeamEnergy();
 
-        return getHorizontalSeam(dp, Arithmetic.find_min(dp[-1]));
+        return getHorizontalSeam(dp, Arithmetic.find_min(dp[dp.length-1]));
     }
 
     private Double[][] findHorizontalSeamEnergy(){
@@ -196,8 +196,8 @@ public class SeamCarver {
 
         for (int j = 1; j < r; j++){
             Double[][] dp = Item[0][j-1].findHorizontalSeamEnergy();
-            int index = Arithmetic.find_min(dp[-1]);
-            T[0][j] = T[0][j-1] + dp[-1][index];
+            int index = Arithmetic.find_min(dp[dp.length-1]);
+            T[0][j] = T[0][j-1] + dp[dp.length-1][index];
             int[] seam = getHorizontalSeam(dp, index);
             Item[0][j] = new SeamCarver(Item[0][j-1]);
             Item[0][j].removeHorizontalSeam(seam);
@@ -206,9 +206,8 @@ public class SeamCarver {
         for (int i = 1; i < c; i++){
             Double[][] dp_c = Item[i-1][0].findVerticalSeamEnergy();
             Double[] last_col = new Double[width-i];
-            for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][-1];
+            for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][dp_c[k].length-1];
             int index_c = Arithmetic.find_min(last_col);
-            Double min_c = T[i-1][0] + dp_c[index_c][-1];
             int[] seam_c = getHorizontalSeam(dp_c, index_c);
             Item[i][0] = new SeamCarver(Item[i-1][0]);
             Item[i][0].removeHorizontalSeam(seam_c);
@@ -217,15 +216,15 @@ public class SeamCarver {
         for (int i = 1; i < c; i++){
             for (int j = 1; j < r; j++){
                 Double[][] dp_r = Item[i][j-1].findHorizontalSeamEnergy();
-                int index_r = Arithmetic.find_min(dp_r[-1]);
-                Double min_r = T[i][j-1] + dp_r[-1][index_r];
+                int index_r = Arithmetic.find_min(dp_r[dp_r.length-1]);
+                Double min_r = T[i][j-1] + dp_r[dp_r.length-1][index_r];
                 int[] seam_r = getHorizontalSeam(dp_r, index_r);
 
                 Double[][] dp_c = Item[i-1][j].findVerticalSeamEnergy();
                 Double[] last_col = new Double[width-i];
-                for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][-1];
+                for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][dp_c[k].length-1];
                 int index_c = Arithmetic.find_min(last_col);
-                Double min_c = T[i-1][j] + dp_c[index_c][-1];
+                Double min_c = T[i-1][j] + dp_c[index_c][dp_c[index_c].length-1];
                 int[] seam_c = getHorizontalSeam(dp_c, index_c);
 
                 if (min_r < min_c){
@@ -239,7 +238,7 @@ public class SeamCarver {
                 }
             }
         }
-        return Item[-1][-1];
+        return Item[c-1][r-1];
     }
 
     // expand the picture
@@ -291,7 +290,7 @@ public class SeamCarver {
         Double[][] dp = findHorizontalSeamEnergy();
 
         // 找前k个最小的缝隙
-        int[] indexes = Arithmetic.getKSmallestIndex(dp[-1], k);
+        int[] indexes = Arithmetic.getKSmallestIndex(dp[dp.length-1], k);
 
         int[][] seams = new int[k][width];
         for (int i =0; i < k; i++) seams[i] = getHorizontalSeam(dp, indexes[i]);
