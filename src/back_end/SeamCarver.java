@@ -163,6 +163,7 @@ public class SeamCarver {
         width = width-1;
     }
 
+    // shrinking the picture
     public SeamCarver shrinking(int new_width, int new_height){
         if (new_height <= 0 || new_height > height || new_width <= 0 || new_width > width) throw new IllegalArgumentException();
         if (new_height == height && new_width == width) return this;
@@ -220,6 +221,89 @@ public class SeamCarver {
         }
         return Item[-1][-1];
     }
+
+    // expand the picture
+    public Picture expandingWidth(int new_width){
+        if (new_width <= width) throw new IllegalArgumentException();
+        int k = new_width - width;
+        Double[][] dp = findVerticalSeamEnergy();
+
+        Double[] last_col = new Double[height];
+        for (int i = 0; i < height; i ++) last_col[i] = dp[i][height-1];
+
+        // 找前k个最小的缝隙
+        int[] indexes = Arithmetic.getKSmallestIndex(last_col, k);
+
+        int[][] seams = new int[k][height];
+        for (int i =0; i < k; i++) seams[i] = getVertivalSeam(dp, indexes[i]);
+
+        int[][] how_to_expand = new int[width][height];
+        for (int i = 0; i < width; i++){
+            for (int j = 0; j < height; j++){
+                how_to_expand[i][j] = 0;
+            }
+        }
+        for (int i = 0; i< k; i++){
+            for (int y = 0; y<height; y++){
+                how_to_expand[seams[i][y]][y] += 1;
+            }
+        }
+
+        // 生成一个新的图片
+        Picture picture = new Picture(width+k, height);
+        int x = 0;
+        for (int i = 0; i < width+k; i++){
+            for (int j = 0; j < height; j++){
+                picture.set(i, j, m_picture.get(x, j));
+                if (how_to_expand[x][j] > 0) {
+                    x+=1;
+                    how_to_expand[x][j] -= 1;
+                }
+            }
+        }
+
+        return picture;
+    }
+
+    public Picture expandingHeight(int new_height){
+        if (new_height <= height) throw new IllegalArgumentException();
+        int k = new_height - height;
+        Double[][] dp = findHorizontalSeamEnergy();
+
+        // 找前k个最小的缝隙
+        int[] indexes = Arithmetic.getKSmallestIndex(dp[-1], k);
+
+        int[][] seams = new int[k][width];
+        for (int i =0; i < k; i++) seams[i] = getHorizontalSeam(dp, indexes[i]);
+
+        int[][] how_to_expand = new int[width][height];
+        for (int i = 0; i < width; i++){
+            for (int j = 0; j < height; j++){
+                how_to_expand[i][j] = 0;
+            }
+        }
+        for (int i = 0; i< k; i++){
+            for (int x = 0; x<width; x++){
+                how_to_expand[x][seams[i][x]] += 1;
+            }
+        }
+
+        // 生成一个新的图片
+        Picture picture = new Picture(width, height+k);
+        int y = 0;
+        for (int i = 0; i < width+k; i++){
+            for (int j = 0; j < height; j++){
+                picture.set(i, j, m_picture.get(i, y));
+                if (how_to_expand[i][y] > 0) {
+                    y+=1;
+                    how_to_expand[i][y] -= 1;
+                }
+            }
+        }
+
+        return picture;
+    }
+
 
     // unit testing (optional)
     public static void main(String[] args){
