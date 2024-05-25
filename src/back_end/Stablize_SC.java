@@ -14,4 +14,16 @@ public class Stablize_SC {
     public static Picture expandingHeight(Picture picture, int new_height){
         return new SeamCarver(picture).expandingHeight(new_height);
     }
+
+    public static Picture shinking(Picture picture, int[][] protect, int new_width, int new_height){
+        return new SeamCarver(picture, protect).shrinking(new_width, new_height).picture();
+    }
+
+    public static Picture expandingWidth(Picture picture, int[][] protect, int new_width){
+        return new SeamCarver(picture, protect).expandingWidth(new_width);
+    }
+
+    public static Picture expandingHeight(Picture picture, int[][] protect, int new_height){
+        return new SeamCarver(picture, protect).expandingHeight(new_height);
+    }
 }
