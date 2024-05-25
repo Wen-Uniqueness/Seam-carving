@@ -90,12 +90,13 @@ public class SeamCarver {
     }
 
     private int[] getHorizontalSeam(Double[][] dp, int start_index){
-        int[] seam = new int[width];
-        seam[width-1] = start_index;
-        for (int i = width-2; i >= 0; i--){
+        int[] seam = new int[dp.length];
+        seam[dp.length-1] = start_index;
+        for (int i = dp.length-2; i >= 0; i--){
             int index = seam[i+1];
             if (seam[i+1]>0 && dp[i][seam[i+1]-1] < dp[i][index]) index = seam[i+1]-1;
-            if (seam[i+1]<height-1 && dp[i][seam[i+1]+1] < dp[i][index]) index = seam[i+1]+1;
+            if (seam[i+1]<dp[0].length-1 && dp[i][seam[i+1]+1] < dp[i][index]) index = seam[i+1]+1;
+            seam[i] = index;
         }
         return seam;
     }
@@ -112,13 +113,13 @@ public class SeamCarver {
 
     private Double[][] findVerticalSeamEnergy(){
         Double[][] dp = new Double[width][height];
-        for (int x = 0; x < width; x++){
-            for (int y = 0; y < height; y++){
+        for (int y = 0; y < height; y++){
+            for (int x = 0; x < width; x++){
                 if (y == 0) dp[x][0] = (double) 1000;
                 else {
                     double last_min = dp[x][y-1];
                     if (x > 0) last_min = Math.min(last_min, dp[x-1][y-1]);
-                    if (x < height-1) last_min = Math.min(last_min, dp[x+1][y-1]);
+                    if (x < width-1) last_min = Math.min(last_min, dp[x+1][y-1]);
                     dp[x][y] = energy(x, y) + last_min;
                 }
             }
@@ -127,12 +128,13 @@ public class SeamCarver {
     }
 
     private int[] getVertivalSeam(Double[][] dp, int start_index){
-        int[] seam = new int[width];
-        seam[width-1] = start_index;
-        for (int i = width-2; i >= 0; i--){
+        int[] seam = new int[dp[0].length];
+        seam[dp[0].length-1] = start_index;
+        for (int i = dp[0].length-2; i >= 0; i--){
             int index = seam[i+1];
-            if (seam[i+1]>0 && dp[i][seam[i+1]-1] < dp[i][index]) index = seam[i+1]-1;
-            if (seam[i+1]<height-1 && dp[i][seam[i+1]+1] < dp[i][index]) index = seam[i+1]+1;
+            if (seam[i+1]>0 && dp[seam[i+1]-1][i] < dp[index][i]) index = seam[i+1]-1;
+            if (seam[i+1]<width-1 && dp[seam[i+1]+1][i] < dp[index][i]) index = seam[i+1]+1;
+            seam[i] = index;
         }
         return seam;
     }
@@ -141,17 +143,20 @@ public class SeamCarver {
     public void removeHorizontalSeam(int[] seam){
         if (seam == null) throw new IllegalArgumentException();
         if (seam.length != width || height <= 1) throw new IllegalArgumentException();
-        for (int i = 0; i < seam.length; i++){
+        for (int i = 0; i < seam.length; i++){     
             if ((i > 0 && Math.abs(seam[i-1] - seam[i]) > 1) || seam[i] < 0 || seam[i] >= height) throw new IllegalArgumentException();
         }
 
         Picture new_picture = new Picture(width, height-1);
-        int[][] new_protect = new int[width][height-1];
-        for (int i = 0; i < width; i++){
-            for (int j = 0; j < height-1; j++){
-                int h = (j >= seam[i]) ? j : j+1;
-                new_picture.set(i, j, m_picture.get(i, h));
-                new_protect[i][j] = protect[i][h];
+        int[][] new_protect = null;
+        if (protect != null){
+            new_protect = new int[width][height-1];
+            for (int i = 0; i < width; i++){
+                for (int j = 0; j < height-1; j++){
+                    int h = (j >= seam[i]) ? j : j+1;
+                    new_picture.set(i, j, m_picture.get(i, h));
+                    new_protect[i][j] = protect[i][h];
+                }
             }
         }
 
@@ -169,14 +174,18 @@ public class SeamCarver {
         }
 
         Picture new_picture = new Picture(width-1, height);
-        int[][] new_protect = new int[width-1][height];
-        for (int i = 0; i < width-1; i++){
-            for (int j = 0; j < height; j++){
-                int w = (i >= seam[j]) ? i : i+1;
-                new_picture.set(i, j, m_picture.get(w,j));
-                new_protect[i][j] = protect[w][j];
+        int[][] new_protect = null;
+        if (protect != null){
+            new_protect = new int[width-1][height];
+            for (int i = 0; i < width-1; i++){
+                for (int j = 0; j < height; j++){
+                    int w = (i >= seam[j]) ? i : i+1;
+                    new_picture.set(i, j, m_picture.get(w,j));
+                    new_protect[i][j] = protect[w][j];
+                }
             }
         }
+        
 
         m_picture = new_picture;
         width = width-1;
@@ -187,8 +196,28 @@ public class SeamCarver {
     public SeamCarver shrinking(int new_width, int new_height){
         if (new_height <= 0 || new_height > height || new_width <= 0 || new_width > width) throw new IllegalArgumentException();
         if (new_height == height && new_width == width) return this;
+
         int c = width - new_width;
-        int r = height = new_height;
+        int r = height - new_height;
+
+        if (c == 0) {
+            SeamCarver result = new SeamCarver(this);
+            for (int i = 0; i < r; i++){
+                int [] seam = result.findHorizontalSeam();
+                result.removeHorizontalSeam(seam);
+            }
+            return result;
+        }
+
+        if (r == 0) {
+            SeamCarver result = new SeamCarver(this);
+            for (int i = 0; i < c; i++){
+                int [] seam = result.findVerticalSeam();
+                result.removeVerticalSeam(seam);
+            }
+            return result;
+        }
+
         Double[][] T = new Double[c][r];
         T[0][0] = 0.;
         SeamCarver[][] Item = new SeamCarver[c][r];
@@ -208,12 +237,14 @@ public class SeamCarver {
             Double[] last_col = new Double[width-i];
             for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][dp_c[k].length-1];
             int index_c = Arithmetic.find_min(last_col);
-            int[] seam_c = getHorizontalSeam(dp_c, index_c);
+            int[] seam_c = getVertivalSeam(dp_c, index_c);
+            T[i][0] = T[i-1][0] + dp_c[index_c][dp_c[0].length-1];
             Item[i][0] = new SeamCarver(Item[i-1][0]);
-            Item[i][0].removeHorizontalSeam(seam_c);
+            Item[i][0].removeVerticalSeam(seam_c);
         }
 
         for (int i = 1; i < c; i++){
+            System.out.println(c-i);
             for (int j = 1; j < r; j++){
                 Double[][] dp_r = Item[i][j-1].findHorizontalSeamEnergy();
                 int index_r = Arithmetic.find_min(dp_r[dp_r.length-1]);
@@ -225,7 +256,7 @@ public class SeamCarver {
                 for (int k = 0; k < width-i; k++) last_col[k] = dp_c[k][dp_c[k].length-1];
                 int index_c = Arithmetic.find_min(last_col);
                 Double min_c = T[i-1][j] + dp_c[index_c][dp_c[index_c].length-1];
-                int[] seam_c = getHorizontalSeam(dp_c, index_c);
+                int[] seam_c = getVertivalSeam(dp_c, index_c);
 
                 if (min_r < min_c){
                     T[i][j] = min_r;
@@ -247,8 +278,8 @@ public class SeamCarver {
         int k = new_width - width;
         Double[][] dp = findVerticalSeamEnergy();
 
-        Double[] last_col = new Double[height];
-        for (int i = 0; i < height; i ++) last_col[i] = dp[i][height-1];
+        Double[] last_col = new Double[width];
+        for (int i = 0; i < width; i ++) last_col[i] = dp[i][height-1];
 
         // 找前k个最小的缝隙
         int[] indexes = Arithmetic.getKSmallestIndex(last_col, k);
@@ -271,8 +302,9 @@ public class SeamCarver {
         // 生成一个新的图片
         Picture picture = new Picture(width+k, height);
         int x = 0;
-        for (int i = 0; i < width+k; i++){
-            for (int j = 0; j < height; j++){
+        for (int j = 0; j < height; j++){
+            x = 0;
+            for (int i = 0; i < width+k; i++){
                 picture.set(i, j, m_picture.get(x, j));
                 if (how_to_expand[x][j] > 0) {
                     
@@ -295,7 +327,9 @@ public class SeamCarver {
         int[] indexes = Arithmetic.getKSmallestIndex(dp[dp.length-1], k);
 
         int[][] seams = new int[k][width];
-        for (int i =0; i < k; i++) seams[i] = getHorizontalSeam(dp, indexes[i]);
+        for (int i =0; i < k; i++) {
+            // System.out.println(indexes[i]);
+            seams[i] = getHorizontalSeam(dp, indexes[i]);}
 
         int[][] how_to_expand = new int[width][height];
         for (int i = 0; i < width; i++){
@@ -312,8 +346,9 @@ public class SeamCarver {
         // 生成一个新的图片
         Picture picture = new Picture(width, height+k);
         int y = 0;
-        for (int i = 0; i < width+k; i++){
-            for (int j = 0; j < height; j++){
+        for (int i = 0; i < width; i++){
+            y = 0;
+            for (int j = 0; j < height+k; j++){
                 picture.set(i, j, m_picture.get(i, y));
                 if (how_to_expand[i][y] > 0) {
                     how_to_expand[i][y] -= 1;

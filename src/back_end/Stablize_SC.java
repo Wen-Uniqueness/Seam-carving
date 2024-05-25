@@ -3,8 +3,8 @@ package back_end;
 import edu.princeton.cs.algs4.Picture;
 
 public class Stablize_SC {
-    public static Picture shinking(Picture picture, int new_width, int new_height){
-        return new SeamCarver(picture).shrinking(new_width, new_height).picture();
+    public static Picture shrinking(Picture picture, int new_width, int new_height){
+        return (new SeamCarver(picture)).shrinking(new_width, new_height).picture();
     }
 
     public static Picture expandingWidth(Picture picture, int new_width){
@@ -25,5 +25,16 @@ public class Stablize_SC {
 
     public static Picture expandingHeight(Picture picture, int[][] protect, int new_height){
         return new SeamCarver(picture, protect).expandingHeight(new_height);
+    }
+
+    public static Picture bs(Picture picture, int new_width, int new_height){
+        if (new_height>picture.height()){
+            picture=expandingHeight(picture,new_height);
+        }
+        if (new_width> picture.width()){
+            picture=expandingWidth(picture,new_width);
+        }
+        picture=shrinking(picture,new_width,new_height);
+        return picture;
     }
 }
