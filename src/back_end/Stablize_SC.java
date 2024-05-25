@@ -10,4 +10,8 @@ public class Stablize_SC {
     public static Picture expandingWidth(Picture picture, int new_width){
         return new SeamCarver(picture).expandingWidth(new_width);
     }
+
+    public static Picture expandingHeight(Picture picture, int new_height){
+        return new SeamCarver(picture).expandingHeight(new_height);
+    }
 }
