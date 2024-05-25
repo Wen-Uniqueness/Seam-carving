@@ -1,19 +1,19 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
+import java.awt.image.ImageProducer;
 import java.io.File;
 import back_end.Stablize_SC;
-
 import edu.princeton.cs.algs4.Picture;
 
 public class Gui extends JFrame {
     private JLabel imageLabel;
     private JButton buttonChooseImage;
     private JButton buttonResizeImage;
-
     private JButton buttonApply;
     private JButton buttonDraw1;
-    private JButton buttonDraw0;
     private JButton buttonDraw2;
     private Rectangle selectionRect;
     private Point startPoint;
@@ -22,7 +22,10 @@ public class Gui extends JFrame {
     private JPanel panel;
     private int new_width;
     private int new_height;
-    private int model=0;
+    private int[][] pixelStatus;
+    private int model = 0;
+
+    Image image;
 
     public Gui() {
         // 创建并设置窗口
@@ -61,9 +64,23 @@ public class Gui extends JFrame {
                 applyResize();
             }
         });
-        
-        
 
+        buttonDraw1 = new JButton("Protect");
+        buttonDraw1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model = 1;
+            }
+        });
+
+
+        buttonDraw2 = new JButton("Erase");
+        buttonDraw2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model = -1;
+            }
+        });
 
         // 创建一个子面板用于包含按钮
         JPanel buttonPanel = new JPanel();
@@ -71,9 +88,13 @@ public class Gui extends JFrame {
         buttonPanel.add(buttonChooseImage);
         buttonPanel.add(buttonResizeImage);
         buttonPanel.add(buttonApply);
+        buttonPanel.add(buttonDraw1);
+        buttonPanel.add(buttonDraw2);
 
         // 将按钮面板添加到主面板的南部
         panel.add(buttonPanel, BorderLayout.SOUTH);
+
+
 
         // 创建标签用于显示图片
         imageLabel = new JLabel();
@@ -94,57 +115,82 @@ public class Gui extends JFrame {
             @Override
             public void mouseReleased(MouseEvent e) {
                 endPoint = e.getPoint();
-                // 在这里处理用户选择的区域，例如获取选择区域的坐标或尺寸
+                if (startPoint != null && endPoint != null) {
+                    //drawOnImage(startPoint, endPoint);
+                }
             }
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                System.out.println(e.getPoint());
-            }
-
         });
 
         imageLabel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
                 endPoint = e.getPoint();
+                Point convertedPoint = convertPoint(endPoint, imageLabel);
                 if (startPoint != null) {
-                    int x = Math.min(startPoint.x, endPoint.x);
-                    int y = Math.min(startPoint.y, endPoint.y);
-                    int width = Math.abs(startPoint.x - endPoint.x);
-                    int height = Math.abs(startPoint.y - endPoint.y);
-                    selectionRect.setBounds(x, y, width, height);
+                    if (convertedPoint.x<picture.width()&&convertedPoint.y<picture.height()){
+                        Graphics g = image.getGraphics();
+
+                        if (model==1){
+                            g.setColor(new Color(0, 0, 255, 200));
+                            g.fillOval(convertedPoint.x,convertedPoint.y,5,5);
+                            for (int i = 0; i < 8; i++) {
+                                for (int j = 0; j < 8; j++) {
+                                    if (convertedPoint.x-4+i>0&&convertedPoint.x-4+i<picture.width()){
+                                        if (convertedPoint.y-4+j>0&&convertedPoint.y-4+j<picture.height()){
+                                            pixelStatus[convertedPoint.x-4+i][convertedPoint.y-4+j]=model;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (model==-1){
+                            g.setColor(new Color(255, 0, 98, 200));
+                            g.fillOval(convertedPoint.x,convertedPoint.y,5,5);
+                            for (int i = 0; i < 8; i++) {
+                                for (int j = 0; j < 8; j++) {
+                                    if (convertedPoint.x-4+i>0&&convertedPoint.x-4+i<picture.width()){
+                                        if (convertedPoint.y-4+j>0&&convertedPoint.y-4+j<picture.height()){
+                                            pixelStatus[convertedPoint.x-4+i][convertedPoint.y-4+j]=model;
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
                     repaint();
                 }
             }
         });
     }
 
+    private Point convertPoint(Point point, Component b) {
+        Point convertedPoint = SwingUtilities.convertPoint(b, point, this);
+        return convertedPoint;
+    }
+
     private void applyResize() {
-        picture=Stablize_SC.bs(picture,new_width,new_height);
+        picture = Stablize_SC.bs(picture, new_width, new_height);
         picture.show();
     }
 
+
+    ImageIcon imageIcon;
     private void displayImage(String imagePath) {
-        // 设置标签的图标为选择的图片
-        ImageIcon imageIcon = new ImageIcon(imagePath);
-        // 缩放图片以适应标签的大小
+        imageIcon = new ImageIcon(imagePath);
         int imageWidth = imageIcon.getIconWidth();
         int imageHeight = imageIcon.getIconHeight();
-        pack();
+        imageLabel.setIcon(imageIcon);
         setSize(imageWidth, imageHeight + buttonChooseImage.getHeight() + buttonResizeImage.getHeight());
         setLocationRelativeTo(null);
-        imageLabel.setIcon(imageIcon);
     }
 
     private void chooseImage() {
-        // 创建文件选择器
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
             @Override
             public boolean accept(File file) {
-                // 只接受图片文件
                 String filename = file.getName().toLowerCase();
                 return file.isDirectory() || filename.endsWith(".jpg") || filename.endsWith(".jpeg") || filename.endsWith(".png") || filename.endsWith(".gif");
             }
@@ -155,41 +201,19 @@ public class Gui extends JFrame {
             }
         });
 
-        // 显示打开文件对话框
         int returnValue = fileChooser.showOpenDialog(this);
 
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-
             picture = new Picture(selectedFile.getAbsolutePath());
+            pixelStatus = new int[picture.width()][picture.height()]; // 初始化二维数组
             displayImage(selectedFile.getAbsolutePath());
-            JLabel p = picture.getJLabel();
-
-            p.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    startPoint = e.getPoint();
-                    selectionRect = new Rectangle(startPoint);
-                    repaint();
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    endPoint = e.getPoint();
-                    // 在这里处理用户选择的区域，例如获取选择区域的坐标或尺寸
-                }
-
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    System.out.println(e.getPoint());
-                }
-
-            });
+            image=new  BufferedImage(picture.width(),picture.height(),BufferedImage.TYPE_INT_ARGB);
         }
+
     }
 
     private void resizeImage() {
-        // 创建一个对话框来输入新的宽度和高度
         JTextField widthField = new JTextField(5);
         JTextField heightField = new JTextField(5);
 
@@ -204,13 +228,11 @@ public class Gui extends JFrame {
                 "Enter new dimensions", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             try {
-                // 解析用户输入的新宽度和高度并存储在new_width和new_height变量中
                 new_width = Integer.parseInt(widthField.getText());
                 new_height = Integer.parseInt(heightField.getText());
                 System.out.println("New Width: " + new_width);
                 System.out.println("New Height: " + new_height);
 
-                // 提示用户新尺寸已被存储
                 JOptionPane.showMessageDialog(null, "New dimensions have been saved.", "Info", JOptionPane.INFORMATION_MESSAGE);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Invalid input. Please enter valid integers for dimensions.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -218,8 +240,21 @@ public class Gui extends JFrame {
         }
     }
 
+
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        if (selectionRect != null) {
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setColor(new Color(0, 0, 255, 100)); // 设置选择框的颜色和透明度
+            g2d.fill(selectionRect);
+            g2d.setColor(Color.BLUE);
+            g2d.draw(selectionRect);
+            g2d.drawImage(image,0,0,this);
+        }
+    }
+
     public static void main(String[] args) {
-        // 确保在事件调度线程中创建和显示 GUI
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
